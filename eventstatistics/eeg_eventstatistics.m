@@ -25,7 +25,7 @@
 % Log:
 %       5/8/2019: First version
 %       5/31/2019: Add subject count
-function report = eeg_eventstatistics(inDir, varargin)
+function report = eeg_eventstatistics(fPaths, varargin)
 
 %% Parse input arguments
 if nargin < 1
@@ -38,13 +38,13 @@ else
                      'filepath'     'string'    []      './'});
 end
 %% Get path of all .set files
-fPaths = getfilelist(inDir, '.set', g.doSubDirs);
+%fPaths = getfilelist(inDir, '.set', g.doSubDirs);
 if isempty(fPaths)
     warning('badcode_report:nofiles', 'No .set file found\n');
     return;
 end
 %% Load datasets
-ALLEEG = pop_loadset('filename',fPaths,'loadmode','info');
+ALLEEG = pop_loadset('filename',fPaths,'loadmode','info','check','off');
 
 %% generate report fields
 types_all = []; % array containing all event type codes for all dataset
