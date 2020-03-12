@@ -44,7 +44,7 @@ if isempty(fPaths)
     return;
 end
 %% Load datasets
-ALLEEG = pop_loadset('filename',fPaths,'loadmode','info');
+ALLEEG = pop_loadset('filename',fPaths,'loadmode','info','check','off');
 
 %% generate report fields
 types_all = []; % array containing all event type codes for all dataset
