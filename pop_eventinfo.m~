@@ -128,14 +128,9 @@ function pop_eventinfo(EEG)
 
         % build data
         t = cell(length(levels),2);
-        for lvl=1:length(levels)
-            t{lvl,1} = levels{lvl};
-            if isfield(eventBIDS.(bfield).Levels, levels{lvl})
-                t{lvl,2} = eventBIDS.(bfield).Levels.(levels{lvl});
-            end
-        end
+        for 
         uicontrol(f, 'Style', 'text', 'String', ['Specify levels for field ' bfield], 'Units', 'normalized', 'Position', [0.4 0.5 0.5 0.05], 'Tag', 'levelEditMsg');
-        uitable(f, 'Data', t, 'ColumnName', {'Description'}, 'RowName', levels, 'Units', 'normalized', 'Position', [0.36 0 0.64 0.5], 'Tag', 'levelEditTbl', 'CellEditCallback',{@levelEditCB, bfield},'ColumnEditable',true); 
+        uitable(f, 'Data', cell(length(levels),1), 'ColumnName', {'Description'}, 'RowName', levels, 'Units', 'normalized', 'Position', [0.36 0 0.64 0.5], 'Tag', 'levelEditTbl', 'CellEditCallback',{@levelEditCB, bfield},'ColumnEditable',true); 
     end
     function levelEditCB(arg1, obj, bfield)
         name = obj.Source.RowName{obj.Indices(1)};
