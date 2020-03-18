@@ -41,7 +41,7 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
     f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'Edit BIDS event info - pop_eventinfo', 'Color', bg);
     f.Position(3) = appWidth;
     f.Position(4) = appHeight;
-    uicontrol(f, 'Style', 'text', 'String', 'BIDS fields information', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.9 1 0.1]);
+    uicontrol(f, 'Style', 'text', 'String', 'BIDS information for EEG.event fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.9 1 0.1]);
     tbl = uitable(f, 'RowName', eventFields, 'ColumnName', { 'BIDSField' 'LongName' 'Description' 'Levels' 'Units' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
     tbl.Position = [0.01 0.54 0.98 0.41];
     tbl.CellSelectionCallback = @cellSelectedCB;
@@ -165,7 +165,7 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
             end
         end
         % create UI
-        uicontrol(f, 'Style', 'text', 'String', ['Specify levels for field ' field], 'Units', 'normalized', 'Position', [0 0.45 1 0.05],'FontWeight', 'bold','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
+        uicontrol(f, 'Style', 'text', 'String', ['Specify categorical values of EEG.event.' field], 'Units', 'normalized', 'Position', [0 0.45 1 0.05],'FontWeight', 'bold','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         h = uitable(f, 'Data', t, 'ColumnName', {'Level' 'Description'}, 'RowName', [], 'Units', 'normalized', 'Position', [0.01 0.07 0.98 0.38], 'FontSize', fontSize, 'Tag', 'levelEditTbl', 'CellEditCallback',{@levelEditCB,field},'ColumnEditable',true); 
         h.ColumnWidth = {appWidth/3,appWidth*2/3};
     end
