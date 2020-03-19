@@ -42,12 +42,13 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
     f.Position(3) = appWidth;
     f.Position(4) = appHeight;
     uicontrol(f, 'Style', 'text', 'String', 'BIDS information for EEG.event fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.9 1 0.1]);
-    tbl = uitable(f, 'RowName', eventFields, 'ColumnName', { 'BIDSField' 'LongName' 'Description' 'Levels' 'Units' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
+    tbl = uitable(f, 'RowName', eventFields, 'ColumnName', { 'BIDS Field' 'LongName' 'Description' 'Levels' 'Units' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
     tbl.Position = [0.01 0.54 0.98 0.41];
     tbl.CellSelectionCallback = @cellSelectedCB;
     tbl.CellEditCallback = @cellEditCB;
     tbl.ColumnEditable = [true true true false true true];
     tbl.ColumnWidth = {appWidth/6,appWidth/6,appWidth/6,appWidth/6,appWidth/6,appWidth/6};
+%     tbl.ColumnFormat = {{'onset', 'trial_type','value','stim_file','sample','HED','response_time'} [] [] [] [] []};
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0 0.1 0.05], 'Callback', @cancelCB); 
     
@@ -109,7 +110,17 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
         field = obj.Source.RowName{obj.Indices(1)};
         column = obj.Source.ColumnName{obj.Indices(2)};
         if ~strcmp(column, 'Levels')
-            eventBIDS.(field).(column) = obj.EditData;
+            if strcmp(column, 'BIDS Field')
+                otherBIDSFieldsIdx = setdiff(1:size(obj.Source.Data,1),obj.Indices(1));
+                curBIDSFields = {obj.Source.Data{otherBIDSFieldsIdx,obj.Indices(2)}};
+                if any(strcmp(obj.EditData, curBIDSFields)) % check for duplication of BIDS field
+                    obj.Source.Data{obj.Indices(1),obj.Indices(2)} = obj.PreviousData; % reset if found
+                else
+                    eventBIDS.(field).BIDSField = obj.EditData;
+                end
+            else
+                eventBIDS.(field).(column) = obj.EditData;
+            end
         end
     end
     function cellSelectedCB(arg1, obj) 
@@ -121,17 +132,17 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
             bfield = obj.Source.Data{row,1};
             columnName = obj.Source.ColumnName{col};
             
-            if ~strcmp(columnName, 'Levels')
-                if isempty(bfield)
-                    c6 = uicontrol(f, 'Style', 'text', 'String', sprintf('No BIDS name specified\nPlease remember to specify BIDS name for this field'), 'Units', 'normalized', 'FontWeight', 'bold', 'ForegroundColor', [0.9 0 0],'BackgroundColor', bg, 'Tag', 'noBidsMsg');
-                    c6.Position = [0 0.38 1 0.1];
-                end
-                if ~strcmp(columnName, 'BIDSField')
-                    % display cell content
-                    uicontrol(f, 'Style', 'text', 'String', sprintf('%s (%s):\n%s',columnName, columnDefinition.(columnName),obj.Source.Data{row,col}), 'Units', 'normalized', 'Position',[0.01 0.08 0.98 0.3], 'HorizontalAlignment', 'left','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'cellContentMsg');
-                end
-            else % if single cell Level selection      
-                    % retrieve all unique values from EEG.event.(field)
+            if strcmp(columnName, 'BIDS Field')
+                c6 = uicontrol(f, 'Style', 'text', 'String', sprintf('Enter BIDS field or choose one of the suggested below:'), 'Units', 'normalized', 'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'selectBIDSMsg');
+                c6.Position = [0.01 0.38 1 0.05];
+                c6.HorizontalAlignment = 'left';
+                c = uicontrol(f,'Style','popupmenu', 'Units', 'normalized', 'Tag', 'selectBIDSDD');
+                c.Position = [0.01 0.28 0.3 0.1];
+                curBIDSFields = {obj.Source.Data{:,col}};
+                c.String = setdiff({'onset', 'trial_type','value','stim_file','sample','HED','response_time'}, curBIDSFields(~cellfun(@isempty, curBIDSFields)));
+                c.Callback = {@bidsFieldSelected, obj.Source, row, col};
+            elseif strcmp(columnName, 'Levels')
+                % retrieve all unique values from EEG.event.(field)
                     if isnumeric(EEG.event(1).(field))
                         values = arrayfun(@(x) num2str(x), [EEG.event.(field)], 'UniformOutput', false);
                         levels = unique(values)';
@@ -148,6 +159,16 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
                         c5 = uicontrol(f, 'Style', 'pushbutton', 'String', 'Yes', 'Units', 'normalized','Tag', 'confirmBtn', 'Callback', {@createLevelUI,field,levels});
                         c5.Position = [(1-c5.Extent(3))/2 0.33 0.1 0.05];
                     end
+            else % any other column selected
+                if isempty(bfield)
+                    c6 = uicontrol(f, 'Style', 'text', 'String', sprintf('No BIDS name specified\nPlease remember to specify BIDS name for this field'), 'Units', 'normalized', 'FontWeight', 'bold', 'ForegroundColor', [0.9 0 0],'BackgroundColor', bg, 'Tag', 'noBidsMsg');
+                    c6.Position = [0.01 0.38 1 0.1];
+                    c6.HorizontalAlignment = 'Left';
+                end
+                if ~strcmp(columnName, 'BIDS Field')
+                    % display cell content
+                    uicontrol(f, 'Style', 'text', 'String', sprintf('%s (%s):\n%s',columnName, columnDefinition.(columnName),obj.Source.Data{row,col}), 'Units', 'normalized', 'Position',[0.01 0.08 0.98 0.3], 'HorizontalAlignment', 'left','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'cellContentMsg');
+                end
             end
         end
     end
@@ -165,7 +186,7 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
             end
         end
         % create UI
-        uicontrol(f, 'Style', 'text', 'String', ['Specify categorical values of EEG.event.' field], 'Units', 'normalized', 'Position', [0 0.45 1 0.05],'FontWeight', 'bold','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
+        uicontrol(f, 'Style', 'text', 'String', ['Describe the categorical values of EEG.event.' field], 'Units', 'normalized', 'Position', [0 0.45 1 0.05],'FontWeight', 'bold','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         h = uitable(f, 'Data', t, 'ColumnName', {'Level' 'Description'}, 'RowName', [], 'Units', 'normalized', 'Position', [0.01 0.07 0.98 0.38], 'FontSize', fontSize, 'Tag', 'levelEditTbl', 'CellEditCallback',{@levelEditCB,field},'ColumnEditable',true); 
         h.ColumnWidth = {appWidth/3,appWidth*2/3};
     end
@@ -175,7 +196,15 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
         description = obj.EditData;
         eventBIDS.(field).Levels.(level) = description;
     end
-
+    
+    function bidsFieldSelected(src, event, table, row, col) 
+        val = src.Value;
+        str = src.String;
+        selected = str{val};
+        table.Data{row,col} = selected;
+        field = table.RowName{row};
+        eventBIDS.(field).BIDSField = selected;
+    end
     function formatted = checkFormat(str)
         if ~isempty(str2num(str))
             formatted = ['x' str];
@@ -206,6 +235,14 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
             delete(h);
         end
         h = findobj('Tag', 'cellContentMsg');
+        if ~isempty(h)
+            delete(h);
+        end
+        h = findobj('Tag', 'selectBIDSMsg');
+        if ~isempty(h)
+            delete(h);
+        end
+        h = findobj('Tag', 'selectBIDSDD');
         if ~isempty(h)
             delete(h);
         end
