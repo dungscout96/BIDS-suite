@@ -2,12 +2,15 @@
 %                   fields of EEG.event
 %
 % Usage:
-%   >> [eInfoDesc, eInfo] = pop_eventinfo( EEG );
+%   >> [EEG, eInfoDesc, eInfo] = pop_eventinfo( EEG );
 %                                              
 % Inputs:
 %   EEG        - EEG dataset structure. May only contain one dataset.
 %
 % Outputs:
+%  'EEG'       - [struct] Updated EEG structure containing event BIDS information
+%                in EEG.BIDS.eInfoDesc and EEG.BIDS.eInfo
+%
 %  'eInfoDesc' - [struct] structure describing BIDS event fields as you specified.
 %                See BIDS specification for all suggested fields.
 %
