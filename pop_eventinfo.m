@@ -18,7 +18,7 @@
 %                (duration in sec), "value" (EEGLAB event type)
 %
 % Author: Dung Truong, Arnaud Delorme
-function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
+function [EEG, eInfoDesc, eInfo] = pop_eventinfo(EEG)
     % default settings
     appWidth = 800;
     appHeight = 500;
@@ -30,7 +30,7 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
     columnDefinition.LongName = 'Long, unabbreviated name of the field';
     columnDefinition.Description = 'Description of the field';
     columnDefinition.Levels = 'For categorical variables: possible values and their descriptions';
-    columnDefinition.Units = 'Measurement units';
+    columnDefinition.Units = 'Measurement units - format [<prefix>]<name>';
     columnDefinition.TermURL = 'URL pointing to a formal definition of this type of data in an ontology available on the web';
     
     eInfo = {};
@@ -42,13 +42,14 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
     f.Position(3) = appWidth;
     f.Position(4) = appHeight;
     uicontrol(f, 'Style', 'text', 'String', 'BIDS information for EEG.event fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.9 1 0.1]);
-    tbl = uitable(f, 'RowName', eventFields, 'ColumnName', { 'BIDS Field' 'LongName' 'Description' 'Levels' 'Units' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
+    tbl = uitable(f, 'RowName', eventFields, 'ColumnName', { 'BIDS Field' 'Levels' 'LongName' 'Description' 'Unit Name' 'Unit Prefix' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
     tbl.Position = [0.01 0.54 0.98 0.41];
     tbl.CellSelectionCallback = @cellSelectedCB;
     tbl.CellEditCallback = @cellEditCB;
-    tbl.ColumnEditable = [true true true false true true];
-    tbl.ColumnWidth = {appWidth/6,appWidth/6,appWidth/6,appWidth/6,appWidth/6,appWidth/6};
-%     tbl.ColumnFormat = {{'onset', 'trial_type','value','stim_file','sample','HED','response_time'} [] [] [] [] []};
+    tbl.ColumnEditable = [true false true true true true];
+    tbl.ColumnWidth = {appWidth/9,appWidth/9,appWidth*2/9,appWidth*2/9,appWidth/9,appWidth/9,appWidth/9};
+    unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
+    tbl.ColumnFormat = {[] [] [] [] [] unitPrefixes []};
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0 0.1 0.05], 'Callback', @cancelCB); 
     
@@ -57,10 +58,10 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
     for i=1:length(eventFields)
         if strcmp(eventFields{i}, 'type') || strcmp(eventFields{i}, 'latency') || strcmp(eventFields{i}, 'usertags')
             data{i,1} = eventBIDS.(eventFields{i}).BIDSField;   
-            data{i,2} = eventBIDS.(eventFields{i}).LongName;
-            data{i,3} = eventBIDS.(eventFields{i}).Description;
-            data{i,4} = eventBIDS.(eventFields{i}).Levels;
-            data{i,5} = eventBIDS.(eventFields{i}).Units;
+            data{i,find(strcmp(tbl.ColumnName, 'LongName'))} = eventBIDS.(eventFields{i}).LongName;
+            data{i,find(strcmp(tbl.ColumnName, 'Description'))} = eventBIDS.(eventFields{i}).Description;
+            data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = eventBIDS.(eventFields{i}).Levels;
+            data{i,find(strcmp(tbl.ColumnName, 'Unit Name'))} = eventBIDS.(eventFields{i}).Units;
         end
     end
     tbl.Data = data;
@@ -102,6 +103,9 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
                 end
             end
         end
+        
+        EEG.BIDS.eInfoDesc = eInfoDesc;
+        EEG.BIDS.eInfo = eInfo;
         clear('eventBIDS');
         close(f);
     end
@@ -118,6 +122,9 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
                 else
                     eventBIDS.(field).BIDSField = obj.EditData;
                 end
+            elseif strcmp(column, 'Unit Name') || strcmp(column, 'Unit Prefix')
+                unit = [obj.Source.Data{obj.Indices(1),find(strcmp(obj.Source.ColumnName, 'Unit Prefix'))} obj.Source.Data{obj.Indices(1),find(strcmp(obj.Source.ColumnName, 'Unit Name'))}];
+                eventBIDS.(field).Units = unit;
             else
                 eventBIDS.(field).(column) = obj.EditData;
             end
@@ -166,8 +173,14 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
                     c6.HorizontalAlignment = 'Left';
                 end
                 if ~strcmp(columnName, 'BIDS Field')
-                    % display cell content
-                    uicontrol(f, 'Style', 'text', 'String', sprintf('%s (%s):\n%s',columnName, columnDefinition.(columnName),obj.Source.Data{row,col}), 'Units', 'normalized', 'Position',[0.01 0.08 0.98 0.3], 'HorizontalAlignment', 'left','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'cellContentMsg');
+                    % display cell content in lower panel
+                    if strcmp(columnName, 'Unit Name') || strcmp(columnName, 'Unit Prefix')
+                        columnName = 'Units';
+                        content = [obj.Source.Data{row,find(strcmp(obj.Source.ColumnName, 'Unit Prefix'))} obj.Source.Data{row,find(strcmp(obj.Source.ColumnName, 'Unit Name'))}];
+                    else
+                        content = obj.Source.Data{row,col};
+                    end
+                    uicontrol(f, 'Style', 'text', 'String', sprintf('%s (%s):\n%s',columnName, columnDefinition.(columnName),content), 'Units', 'normalized', 'Position',[0.01 0.08 0.98 0.3], 'HorizontalAlignment', 'left','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'cellContentMsg');
                 end
             end
         end
@@ -175,20 +188,26 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
 
     function createLevelUI(src,event,field,levels)
         removeLevelUI();
-
-        % build table data
-        t = cell(length(levels),2);
-        for lvl=1:length(levels)
-            t{lvl,1} = levels{lvl};
-            formattedLevel = checkFormat(levels{lvl}); % put level in the right format for indexing. Number is prepended by 'x'
-            if ~isempty(eventBIDS.(field).Levels) && isfield(eventBIDS.(field).Levels, formattedLevel)
-                t{lvl,2} = eventBIDS.(field).Levels.(formattedLevel);
+        
+        if strcmp(field, 'usertags')
+            uicontrol(f, 'Style', 'text', 'String', 'Levels editing not applied for HED. Use ''pop_tageeg(EEG)'' of HEDTools plug-in to edit event HED tags', 'Units', 'normalized', 'Position', [0.01 0.45 1 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
+        else
+            % build table data
+            t = cell(length(levels),2);
+            for lvl=1:length(levels)
+                t{lvl,1} = levels{lvl};
+                formattedLevel = checkFormat(levels{lvl}); % put level in the right format for indexing. Number is prepended by 'x'
+                if ~isempty(eventBIDS.(field).Levels) && isfield(eventBIDS.(field).Levels, formattedLevel)
+                    t{lvl,2} = eventBIDS.(field).Levels.(formattedLevel);
+                end
             end
+            % create UI
+            uicontrol(f, 'Style', 'text', 'String', ['Describe the categorical values of EEG.event.' field], 'Units', 'normalized', 'HorizontalAlignment', 'left', 'Position', [0.31 0.45 0.7 0.05],'FontWeight', 'bold','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
+            msg = 'BIDS allow you to describe the level for each of your categorical field. Describing levels help other researchers understand your experiment better';
+            uicontrol(f, 'Style', 'text', 'String', msg, 'Units', 'normalized', 'HorizontalAlignment', 'Left','Position', [0.01 0 0.3 0.4],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelMsg');
+            h = uitable(f, 'Data', t, 'ColumnName', {'Level' 'Description'}, 'RowName', [], 'Units', 'normalized', 'Position', [0.31 0.07 0.68 0.38], 'FontSize', fontSize, 'Tag', 'levelEditTbl', 'CellEditCallback',{@levelEditCB,field},'ColumnEditable',[false true]); 
+            h.ColumnWidth = {appWidth/5,appWidth*3/5};
         end
-        % create UI
-        uicontrol(f, 'Style', 'text', 'String', ['Describe the categorical values of EEG.event.' field], 'Units', 'normalized', 'Position', [0 0.45 1 0.05],'FontWeight', 'bold','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
-        h = uitable(f, 'Data', t, 'ColumnName', {'Level' 'Description'}, 'RowName', [], 'Units', 'normalized', 'Position', [0.01 0.07 0.98 0.38], 'FontSize', fontSize, 'Tag', 'levelEditTbl', 'CellEditCallback',{@levelEditCB,field},'ColumnEditable',true); 
-        h.ColumnWidth = {appWidth/3,appWidth*2/3};
     end
 
     function levelEditCB(arg1, obj, field)
@@ -243,6 +262,10 @@ function [eInfoDesc, eInfo] = pop_eventinfo(EEG)
             delete(h);
         end
         h = findobj('Tag', 'selectBIDSDD');
+        if ~isempty(h)
+            delete(h);
+        end
+        h = findobj('Tag', 'levelMsg');
         if ~isempty(h)
             delete(h);
         end
