@@ -24,7 +24,7 @@ function [STUDY, pInfoDesc, pInfo] = pop_participantinfo(STUDY)
     fg = [0 0 0.4];
     levelThreshold = 20;
     fontSize = 12;
-    pFields = { 'Participant_id' 'Gender' 'Age' 'Group' };
+    pFields = { 'Participant_id' 'Sex' 'Age' 'Group' };
     pInfoBIDS = newpInfoBIDS();    
     pInfo = {};
     pInfoDesc = [];
@@ -177,7 +177,7 @@ function [STUDY, pInfoDesc, pInfo] = pop_participantinfo(STUDY)
                 end
                 % create UI
                 uicontrol(f, 'Style', 'text', 'String', ['Describe the categorical values of participant field ' field], 'Units', 'normalized', 'HorizontalAlignment', 'left', 'Position', [0.48 0.45 0.53 0.05],'FontWeight', 'bold','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
-                msg = 'BIDS allow you to describe the level for each of your categorical field. Describing levels help other researchers understand your experiment better';
+                msg = 'BIDS allows you to describe the level for each of your categorical field. Describing levels helps other researchers to understand your experiment better';
                 uicontrol(f, 'Style', 'text', 'String', msg, 'Units', 'normalized', 'HorizontalAlignment', 'Left','Position', [0.32 0 0.15 0.4],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelMsg');
                 h = uitable(f, 'Data', t(:,2), 'ColumnName', {'Description'}, 'RowName', t(:,1), 'Units', 'normalized', 'Position', [0.48 0.07 0.5 0.38], 'FontSize', fontSize, 'Tag', 'levelEditTbl', 'CellEditCallback',{@levelEditCB,field},'ColumnEditable',true); 
                 h.ColumnWidth = {appWidth*0.5*0.9};
