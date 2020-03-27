@@ -81,14 +81,11 @@ function [EEG, eInfoDesc, eInfo] = pop_eventinfo(EEG)
             if isfield(eventBIDS.(field), 'Levels') && ~isempty(eventBIDS.(field).Levels)
                 data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = strjoin(fieldnames(eventBIDS.(field).Levels),',');
             else
-                data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'n/a';
-            end
-        else
-            % Levels
-            if strcmp(field, 'latency') || strcmp(field, "usertags")
-                data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'n/a';
-            else
-                data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'Click to specify below';
+                if strcmp(field, 'latency') || strcmp(field, "usertags")
+                    data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'n/a';
+                else
+                    data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'Click to specify below';
+                end
             end
         end
         clear('field');
@@ -321,6 +318,7 @@ function [EEG, eInfoDesc, eInfo] = pop_eventinfo(EEG)
     end
     function event = newEventBIDS()
         event = [];
+        % if resume editing
         if isfield(EEG,'BIDS') && isfield(EEG.BIDS,'eInfoDesc') && isfield(EEG.BIDS,'eInfo')
             for idx=1:size(EEG.BIDS.eInfo,1)
                 field = EEG.BIDS.eInfo{idx,2}; 
@@ -361,7 +359,7 @@ function [EEG, eInfoDesc, eInfo] = pop_eventinfo(EEG)
                 event.(fields{idx}).Levels = [];
                 event.(fields{idx}).TermURL = '';
             end
-        else
+        else % start fresh
             fields = fieldnames(EEG.event);
             for idx=1:length(fields)
                 if strcmp(fields{idx}, 'type')
