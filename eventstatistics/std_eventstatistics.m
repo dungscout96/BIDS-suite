@@ -127,7 +127,7 @@ for i=1:ntype
     end
     
     % subject occurences count
-    temp = {dataset(appearedInIdx).subject}; % list of subjects the event type appeared in, duplicate allowed
+    temp = {ALLEEG(appearedInIdx).subject}; % list of subjects the event type appeared in, duplicate allowed
     subjAppearedIn = unique(temp); % list of Unique subjects the event type appeared in
     subjAbsentFrom = setdiff(STUDY.subject,subjAppearedIn);
     if isempty(find(strcmp(subjAppearedIn,''),1)) % if there's NO empty subject value --> all dataset have subject info
