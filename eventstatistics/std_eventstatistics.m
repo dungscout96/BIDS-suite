@@ -36,7 +36,8 @@ else
     g = finputcheck(varargin,...
                     {'doSubDirs'    'boolean'   [0,1]   1;
                      'writeToFile'  'boolean'   [0,1]   0;
-                     'filepath'     'string'    []      './'});
+                     'filepath'     'string'    []      './';
+		     'pattern'	    'string'    []      ''});
 end
 
 %% generate report fields
