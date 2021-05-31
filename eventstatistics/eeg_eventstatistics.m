@@ -35,7 +35,8 @@ else
     g = finputcheck(varargin,...
                     {'doSubDirs'    'boolean'   [0,1]   1;
                      'writeToFile'  'boolean'   [0,1]   0;
-                     'filepath'     'string'    []      './'});
+                     'filepath'     'string'    []      './';
+                     'pattern'      'string'    []      ''});
 end
 %% Get path of all .set files
 %fPaths = getfilelist(inDir, '.set', g.doSubDirs);
@@ -44,7 +45,7 @@ if isempty(fPaths)
     return;
 end
 %% Load datasets
-ALLEEG = pop_loadset('filename',fPaths,'loadmode','info','check','off');
+ALLEEG = pop_loadset('filename',fPaths,'loadmode','info');
 
 %% generate report fields
 types_all = []; % array containing all event type codes for all dataset
@@ -119,6 +120,7 @@ for i=1:ntype
         type.absentFrom = nan;
     end
     
+    if ~any(cellfun(@(x) isempty(x),{ALLEEG.subject}))
     % subject occurences count
     subj_all = unique({ALLEEG.subject});
     temp = {ALLEEG(appearedInIdx).subject}; % list of subjects the event type appeared in, duplicate allowed
@@ -146,7 +148,7 @@ for i=1:ntype
         type.appearedInSubj = nan;
         type.absentFromSubj = nan;
     end
-    
+    end
     % if write to file option ON
     if g.writeToFile
         % correspond to fprintf(fidReport,'EventType\tAppearedInCount\tAbsentFromCount\tSumNum\tMaxNum\tMinNum\tMeanNum\t');

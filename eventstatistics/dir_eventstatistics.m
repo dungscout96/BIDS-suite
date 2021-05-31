@@ -8,12 +8,13 @@ else
     g = finputcheck(varargin,...
                     {'doSubDirs'    'boolean'   [0,1]   1;
                      'writeToFile'  'boolean'   [0,1]   0;
-                     'filepath'     'string'    []      './'});
+                     'filepath'     'string'    []      './';
+                     'pattern'      'string'    []      ''});
 end
 if isempty(inDir)
     error("Empty path provided"); 
 else
-    fPaths = getfilelist(inDir, '.set', g.doSubDirs);
+    fPaths = getfilelist(inDir, '.set', g.pattern, g.doSubDirs);
     report = eeg_eventstatistics(fPaths, varargin{:});
    
 end
@@ -36,7 +37,7 @@ end
 % Copyright (C) 2012-2016 Thomas Rognon tcrognon@gmail.com,
 % Jeremy Cockfield jeremy.cockfield@gmail.com, and
 % Kay Robbins kay.robbins@utsa.edu
-function fPaths = getfilelist(inDir, fileExt, doSubDirs)
+function fPaths = getfilelist(inDir, fileExt, pattern, doSubDirs)
 fPaths = {};
 directories = {inDir};
 while ~isempty(directories)
@@ -47,12 +48,17 @@ while ~isempty(directories)
     compareIndex = ~strcmp(fileNames, '.') & ~strcmp(fileNames, '..');
     subDirs = strcat([nextDir filesep], fileNames(compareIndex & fileDirs));
     fileNames = fileNames(compareIndex & ~fileDirs);
-    if nargin > 1 && ~isempty(fileExt) && ~isempty(fileNames);
+    if nargin > 1 && ~isempty(fileExt) && ~isempty(fileNames)
         fileNames = processExts(fileNames, fileExt);
     end
     fileNames = strcat([nextDir filesep], fileNames);
     directories = [directories(1:end-1); subDirs(:)];
-    fPaths = [fPaths(:); fileNames(:)];
+    if ~isempty(pattern) && ~isempty(fileNames)
+        matched = cellfun(@(x) ~isempty(x),regexp(fileNames,pattern));
+        fPaths = [fPaths(:); fileNames(matched)];
+    else
+        fPaths = [fPaths(:); fileNames(:)];
+    end
     if nargin > 2 && ~doSubDirs
         break;
     end

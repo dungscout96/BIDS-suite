@@ -30,21 +30,15 @@ function report = std_eventstatistics(STUDY, ALLEEG, varargin)
 if nargin < 1
     help std_eventstatistics
     return;
-else  
+elseif nargin < 2
+    error("Must provide both STUDY and ALLEEG struct array");
+else
     g = finputcheck(varargin,...
                     {'doSubDirs'    'boolean'   [0,1]   1;
                      'writeToFile'  'boolean'   [0,1]   0;
                      'filepath'     'string'    []      './'});
 end
-%% Get path of all .set files
-if ~exist('ALLEEG','var')
-    dataset = STUDY.datasetinfo;
-    ALLEEG = cell(1,numel(dataset));
-    for i=1:numel(dataset)
-        EEG = pop_loadset('filepath',dataset(i).filepath,'filename',dataset(i).filename,'loadmode','info');
-        ALLEEG{i} = EEG;
-    end
-end
+
 %% generate report fields
 types_all = []; % array containing all event type codes for all dataset
 numbers_all = []; % array containing count of appearance of all event code for each dataset
